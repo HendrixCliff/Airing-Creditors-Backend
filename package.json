@@ -1,0 +1,38 @@
+{
+  "name": "airing-creditor",
+  "version": "1.0.0",
+  "description": "Airing Creditor",
+  "main": "app.js",
+  "scripts": {
+    "start": "cross-env NODE_ENV=development nodemon server.js",
+    "start_prod": "cross-env NODE_ENV=production nodemon server.js"
+  },
+  "author": "Godwin Chukwuebuka",
+  "license": "ISC",
+  "dependencies": {
+    "africastalking": "^0.7.1",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^7.4.1",
+    "flutterwave-node-v3": "^1.1.12",
+    "googleapis": "^144.0.0",
+    "helmet": "^8.0.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.12.0",
+    "mongoose": "^8.8.4",
+    "nodemailer": "^6.9.16",
+    "validator": "^13.12.0",
+    "validators": "^0.3.1",
+    "xss": "^1.0.15",
+    "xss-clean": "^0.1.4"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "nodemon": "^3.1.9"
+  }
+}
