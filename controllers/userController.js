@@ -35,7 +35,7 @@ exports.userLoggedIn = asyncErrorHandler(async (req, res, next) => {
     status: 'success',
     message: 'User fetched successfully',
     user
-  });;
+  });
 })
 
 

@@ -10,17 +10,17 @@ const africasTalking = require('africastalking')({
 
 
 exports.sendAirtime = asyncErrorHandler(async (req, res, next) => {
-  const { phoneNumber, amount, status, transaction_id, currencyCode } = req.body;
+  const { phoneNumber, amount, status, transaction_id } = req.body;
 
-  if (!phoneNumber || !currencyCode || !amount || !status || !transaction_id) {
+  if (!phoneNumber || !amount || !status || !transaction_id) {
       return next(new CustomError("All parameters are required", 400));
   }
 
   const airtime = africasTalking.AIRTIME;
-  const options = airtimeUtil.createAirtimeOptions(phoneNumber, currencyCode, amount);
+  const options = airtimeUtil.createAirtimeOptions(phoneNumber, amount);
 
   try {
-      const airtimeResponse = await airtime.send(options);
+      await airtime.send(options);
       
       // Save airtime response to database
       const savedResponse = await AirtimeResponseModel.create({

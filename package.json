@@ -9,6 +9,9 @@
   },
   "author": "Godwin Chukwuebuka",
   "license": "ISC",
+  "engines": {
+  "node": ">=16"
+ },
   "dependencies": {
     "africastalking": "^0.7.1",
     "bcryptjs": "^2.4.3",

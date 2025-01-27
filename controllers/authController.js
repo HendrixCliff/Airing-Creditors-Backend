@@ -4,8 +4,9 @@ const util = require("util")
 const crypto = require('crypto')
 const jwt = require("jsonwebtoken")
 const CustomError = require("./../Utils/CustomError")
-const sendEmail = require("./../Utils/sendForgotPasswordEmail") 
-
+const sendForgotPasswordEmail = require("./../Utils/sendForgotPasswordEmail") 
+const bcrypt = require("bcryptjs");
+const validator = require("validator");
 
 
 const signToken = id => {
@@ -13,7 +14,7 @@ const signToken = id => {
 if (!process.env.SECRET_STR) {
     throw new Error('Missing SECRET_STR in environment variables');
 }
-    const secret = process.env.SECRET_STR || 'z&8Jm!2z@H^#xQW3pE$5kL@v#X$8R&y#jP7Lm9zQ@#Zx%'; // Use a fallback
+    const secret = process.env.SECRET_STR; 
     return jwt.sign({ id: id }, secret, {
         expiresIn: process.env.LOGIN_EXPIRES || '1h', // Add default expiry
     });
@@ -62,12 +63,36 @@ function getMaxAge() {
 
 exports.signup = asyncErrorHandler(async (req, res, next) => {
     try {
+        if (!req.body.username || !req.body.email || !req.body.password || !req.body.phoneNumber || !req.body.country) {
+            return next(new CustomError("Username, email, and password are required", 400));
+        }
+        
+        const { username, email, password, phoneNumber, country } = req.body;
+      
+        const existingUser = await User.findOne({ email: req.body.email });
+        if (existingUser) {
+            return next(new CustomError("Email is already in use", 409));
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+      
+        if (!validator.isEmail(email)) {
+            return next(new CustomError("Invalid email address", 400));
+        }
+        if (!validator.isMobilePhone(phoneNumber)) {
+            return next(new CustomError("Invalid phone number", 400));
+        }
+        if (!country || typeof country !== "string" || country.trim().length === 0) {
+            return next(new CustomError("Invalid country", 400));
+        }
         const user = await User.create({
-            ...req.body,
-            date: new Date(), 
-        });
+                                        username, 
+                                        email,
+                                        password: hashedPassword,
+                                        phoneNumber,
+                                        country,
+                                        date: new Date() });
 
-        console.log("User signed up successfully");
+        
         createSendResponse(user, 201, res); // Ensure this function is properly implemented
     } catch (error) {
         console.error("Error during signup:", error);
@@ -76,13 +101,15 @@ exports.signup = asyncErrorHandler(async (req, res, next) => {
 });
 
 exports.login =  asyncErrorHandler(async (req, res, next) => {
-    const username = req.body.username
-    const password = req.body.password
+    const { username, password } = req.body;
     
     if (!username || !password) {
         return next(new CustomError("Provide your username and password", 401))
     }
-    console.log("Username and Password dey here")
+    if (!validator.isAlphanumeric(username)) {
+        return next(new CustomError("Invalid username format", 400));
+      }
+   
     const user = await User.findOne({username}).select('+password')
     const compare = await user.comparePasswordInDb(password, user.password)
 
@@ -205,29 +232,41 @@ exports.protect = asyncErrorHandler(async (req, res, next) => {
 
 
 
-exports.authStatus = async (req, res, next) => {
-  try {
-    const token = req.cookies.authToken; // Use req.cookies only if cookies are set up
-
-    if (!token) {
-      return res.status(401).json({ isAuthenticated: false, message: 'Not authenticated' });
-    }
-    
-   
-    const decoded = await jwt.verify(token, process.env.JWT_SECRET );
-    if (!decoded) {
-        return next(new CustomError("Not Valid", 400))
-    }
-    return res.status(200).json({
-      isAuthenticated: true,
-      username: decoded.username,
-      token,
-      cookie: req.cookies.authToken
-    });
-  } catch (error) {
-    console.error('Authentication error:', error.message);
-    return res.status(401).json({ isAuthenticated: false, message: 'Invalid or expired token' });
-  }
-};
-
+    exports.authStatus = async (req, res, next) => {
+        try {
+          const token = req.cookies?.authToken; 
+          if (!token) {
+            return res.status(401).json({
+              isAuthenticated: false,
+              message: 'No authentication token provided',
+            });
+          }
+      
+          let decoded;
+          try {
+            // Verify the token
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+          } catch (err) {
+            console.error('Token verification failed:', err.message);
+            return res.status(401).json({
+              isAuthenticated: false,
+              message: 'Invalid or expired authentication token',
+            });
+          }
+      
+          // Respond with authenticated status
+          return res.status(200).json({
+            isAuthenticated: true,
+            username: decoded.username,
+            cookie: token,
+          });
+        } catch (error) {
+          console.error('Unexpected error in authStatus handler:', error.message);
+          return res.status(500).json({
+            isAuthenticated: false,
+            message: 'Internal server error',
+          });
+        }
+      };
+      
 
