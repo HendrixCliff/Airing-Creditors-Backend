@@ -39,7 +39,7 @@ exports.initiatePayment = asyncErrorHandler( async (req, res, next) => {
         try {
             const response = await flw.Payment.initialize(payload);
             
-            if (!response || response.status !== "success" || !response.data) {
+            if (!response || response.data.status !== "success" || !response.data) {
                 return next(new CustomError("Unexpected response from payment gateway", 500));
               }
 
@@ -47,7 +47,8 @@ exports.initiatePayment = asyncErrorHandler( async (req, res, next) => {
             status: response.data.status,
             transactionId: response.data.id,
             paymentLink: response.data.link,
-            phoneNumber, // Use phoneNumber from req.body
+            phoneNumber, 
+            amount,
             data: response.data,
           });
 } catch (error) {
@@ -57,10 +58,10 @@ exports.initiatePayment = asyncErrorHandler( async (req, res, next) => {
 
 
 exports.verifyPayment = asyncErrorHandler(async (req, res, next) => {
-    const { transaction_id, phoneNumber } = req.body; // Retrieve phoneNumber from the request body
+    const { transaction_id, phoneNumber, amount } = req.body; // Retrieve phoneNumber from the request body
 
     // Ensure both transaction_id and phoneNumber are provided in the request
-    if (!transaction_id || !phoneNumber) {
+    if (!transaction_id || !phoneNumber || !amount) {
         return next(new CustomError("Transaction ID and phone number are required for verification", 400));
     }
 
@@ -71,7 +72,7 @@ exports.verifyPayment = asyncErrorHandler(async (req, res, next) => {
             return next(new CustomError("Transaction verification failed", 400));
         }
 
-        const amountFromRequest = parseFloat(req.body.amount);
+        const amountFromRequest = parseFloat(amount);
         const amountFromResponse = parseFloat(response.data.amount);
 
         // Match the phone number provided with the one retrieved from the client
@@ -84,7 +85,7 @@ exports.verifyPayment = asyncErrorHandler(async (req, res, next) => {
             req.body.transaction_id = transaction_id; 
             req.body.status = 'successful';
             req.body.phoneNumber = phoneNumber; // Use phoneNumber strictly from the request
-            
+            req.body.amount = amountFromResponse; // Use amount from response for consistency
             return await sendAirtime(req, res, next);
         } else {
             return next(new CustomError("Payment verification failed", 400));

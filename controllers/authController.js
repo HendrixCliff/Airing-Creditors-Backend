@@ -90,7 +90,7 @@ exports.signup = asyncErrorHandler(async (req, res, next) => {
                                         password: hashedPassword,
                                         phoneNumber,
                                         country,
-                                        date: new Date() });
+                                        date:  `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` });
 
         
         createSendResponse(user, 201, res); // Ensure this function is properly implemented

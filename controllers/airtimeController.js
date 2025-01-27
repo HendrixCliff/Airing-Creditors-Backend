@@ -28,7 +28,7 @@ exports.sendAirtime = asyncErrorHandler(async (req, res, next) => {
           amount,
           status, 
           transaction_id,
-          date: new Date(), // Use current date
+          date:  `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, 
       });
 
       return res.status(200).json({
