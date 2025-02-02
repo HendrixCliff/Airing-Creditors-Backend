@@ -18,30 +18,38 @@ exports.allUsers = asyncErrorHandler(async (req, res, next) => {
   });
 })
 
-exports.userLoggedIn = asyncErrorHandler(async (req, res, next) => {
+exports.userProfile = asyncErrorHandler(async (req, res, next) => {
   
-  const userId = req.user?.id;
+  const userId = req.user && req.user.id; // Ensure both req.user and id are valid
+
 
   if (!userId) {
     return next(new CustomError('User not authenticated', 401));
   }
-  const user = await User.findById(userId);
+  const user = await User.findById(userId).select('-password -__v'); // Exclude sensitive fields
+
 
   if (!user) {
     return next(new CustomError('User not found', 404));
   }
 
-    res.status(200).json({
-    status: 'success',
-    message: 'User fetched successfully',
-    user
+  res.status(200).json({
+    success: true,
+    data: {
+      message: 'CORS is configured properly' ,
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      country: user.country,
+    },
   });
 })
 
 
 
 
-exports.getAllUsers = asyncErrorHandler( async( req, res, next) => {
+exports.allUsers = asyncErrorHandler( async( req, res, next) => {
   const users = await User.find()
 
   res.status(200).json({

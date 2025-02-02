@@ -13,9 +13,9 @@ const AirtimeResponseSchema = new mongoose.Schema(
       required: true,
     },
     date: { type: Date, required: true },
-    status: {
+    verifyStatus: {
       type: String,
-      required: true,
+    
       enum: ['Success', 'Failed', 'Pending'],
     },
     transaction_id: {

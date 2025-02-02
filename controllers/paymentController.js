@@ -3,70 +3,84 @@ const CustomError = require("../Utils/CustomError")
 const flw = new Flutterwave(process.env.FLW_PUBLIC_KEY, process.env.FLW_SECRET_KEY);
 const { sendAirtime } = require('./airtimeController'); 
 const validator = require("validator");
- 
 
-exports.initiatePayment = asyncErrorHandler( async (req, res, next) => {
+
+exports.initiatePayment = asyncErrorHandler(async (req, res, next) => {
     const { email, amount, phoneNumber, currency, payment_option } = req.body;
-    if (!email || !amount || !currency || !tx_ref || !phoneNumber) {
-        return( next(new CustomError("Please provide evrey necessary detail", 400)))
+
+    // Validate request parameters
+    if (!email || !amount || !currency || !phoneNumber) {
+        return next(new CustomError("Please provide every necessary detail", 400));
     }
-    if (!validator.isEmail(email)) {
+
+    if (!validator.isEmail(email.trim())) {
         return next(new CustomError("Invalid email address", 400));
-      }
-      
-      if (!amount || isNaN(amount) || amount <= 0) {
+    }
+
+    if (isNaN(amount) || amount <= 0) {
         return next(new CustomError("Invalid payment amount", 400));
-      }
-    const paymentOptions = payment_option || 'card';  // Use provided option or default
-    const tx_ref = `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    const paymentOptions = payment_option || "card"; // Use provided option or default
+    const tx_ref = `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; // Now correctly placed
 
     const payload = {
         tx_ref,
         amount,
-        currency: currency || 'NGN',
+        currency: currency || "NGN",
         redirect_url: process.env.FLW_REDIRECT_URL,
         payment_options: paymentOptions,
-        customer: { 
-        email, 
-        phone_number: phoneNumber 
-    },
+        customer: {
+            email,
+            phone_number: phoneNumber,
+        },
         customizations: {
-            title: 'Payment for Airtime',
-            description: 'Payment for airtime services',
+            title: "Payment for Airtime",
+            description: "Payment for airtime services",
             logo: process.env.FLW_LOGO_URL,
         },
     };
-        try {
-            const response = await flw.Payment.initialize(payload);
-            
-            if (!response || response.data.status !== "success" || !response.data) {
-                return next(new CustomError("Unexpected response from payment gateway", 500));
-              }
+
+    try {
+        const response = await flw.Payment.initialize(payload);
+
+        // Ensure response structure is valid
+        if (!response || !response.data) {
+            console.error("Error: Payment response is undefined or null", response);
+            return next(new CustomError("Unexpected response from payment gateway", 500));
+        }
+
+        if (response.data.status !== "success") {
+            console.error("Error: Payment initialization failed", response.data);
+            return next(new CustomError("Payment initialization failed", 500));
+        }
 
         return res.status(200).json({
             status: response.data.status,
             transactionId: response.data.id,
             paymentLink: response.data.link,
-            phoneNumber, 
+            phoneNumber,
             amount,
             data: response.data,
-          });
-} catch (error) {
-    return next(new CustomError("Payment initiation error: " + error.message, 500));
-}})
+        });
+    } catch (error) {
+        console.error("Payment initiation error:", error);
+        return next(new CustomError("Payment initiation error: " + error.message, 500));
+    }
+});
 
 
 
 exports.verifyPayment = asyncErrorHandler(async (req, res, next) => {
-    const { transaction_id, phoneNumber, amount } = req.body; // Retrieve phoneNumber from the request body
+    const { transactionId, phoneNumber, amount } = req.body;
 
-    // Ensure both transaction_id and phoneNumber are provided in the request
+    // Ensure all required fields are provided
     if (!transaction_id || !phoneNumber || !amount) {
-        return next(new CustomError("Transaction ID and phone number are required for verification", 400));
+        return next(new CustomError("Transaction ID, phone number, and amount are required for verification", 400));
     }
 
     try {
-        const response = await flw.Transaction.verify({ id: transaction_id });
+        const response = await flw.Transaction.verify({ id: transactionId });
 
         if (!response || !response.data) {
             return next(new CustomError("Transaction verification failed", 400));
@@ -75,18 +89,26 @@ exports.verifyPayment = asyncErrorHandler(async (req, res, next) => {
         const amountFromRequest = parseFloat(amount);
         const amountFromResponse = parseFloat(response.data.amount);
 
-        // Match the phone number provided with the one retrieved from the client
+        // Validate the transaction details
         if (
-            response.data.status === 'successful' &&
-            response.data.currency === 'NGN' && 
-            amountFromRequest === amountFromResponse &&
-            phoneNumber === response.data.customer.phone_number // Validate phoneNumber matches
+            response.data.status === "successful" &&
+            response.data.currency === "NGN" 
         ) {
-            req.body.transaction_id = transaction_id; 
-            req.body.status = 'successful';
-            req.body.phoneNumber = phoneNumber; // Use phoneNumber strictly from the request
-            req.body.amount = amountFromResponse; // Use amount from response for consistency
-            return await sendAirtime(req, res, next);
+            // Modify req.body so sendAirtime receives the expected parameters
+            req.body.status = "successful";
+            req.body.amount = amountFromResponse;
+
+            // Send Airtime
+            const sendAirtimeResponse = await new Promise((resolve, reject) => {
+                sendAirtime(req, {
+                    status: (statusCode) => ({
+                        json: (data) => resolve({ statusCode, data }),
+                    }),
+                }, reject);
+            });
+
+            // Send the captured response back to the frontend
+            return res.status(sendAirtimeResponse.statusCode).json(sendAirtimeResponse.data);
         } else {
             return next(new CustomError("Payment verification failed", 400));
         }
@@ -94,10 +116,11 @@ exports.verifyPayment = asyncErrorHandler(async (req, res, next) => {
         return res.status(400).json({
             status: "fail",
             message: "Payment verification failed",
-            reason: "Transaction status or details do not match",
+            reason: error.message || "Transaction status or details do not match",
         });
     }
 });
+
 
 // In your case of building an airtime app integrated with Flutterwave, the money spent for purchasing airtime comes from the user's payments, not your personal or company funds—if the system is properly set up. Here's how it works:
 

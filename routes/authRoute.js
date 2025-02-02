@@ -7,8 +7,7 @@ const authController = require("../controllers/authController")
 
 router.route("/login").post(authController.login)
 router.route("/signup").post(authController.signup)
-//router.route("/forgotPassword").post(authController.forgotPassword)
+router.route("/forgotPassword").post(authController.forgotPassword)
 router.route("/resetPassword/:token").patch(authController.resetPassword)
-router.route("/me").get(authController.authStatus)
 
 module.exports = router 

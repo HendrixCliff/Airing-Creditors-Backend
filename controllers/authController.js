@@ -49,6 +49,7 @@ function getMaxAge() {
 
         res.status(statusCode).json({
             status: 'success',
+            token,
             data: { user },
         });
     } catch (err) {
@@ -67,13 +68,12 @@ exports.signup = asyncErrorHandler(async (req, res, next) => {
             return next(new CustomError("Username, email, and password are required", 400));
         }
         
-        const { username, email, password, phoneNumber, country } = req.body;
+        const { username, email, password, confirmPassword, phoneNumber, country } = req.body;
       
         const existingUser = await User.findOne({ email: req.body.email });
         if (existingUser) {
             return next(new CustomError("Email is already in use", 409));
         }
-        const hashedPassword = await bcrypt.hash(password, 10);
       
         if (!validator.isEmail(email)) {
             return next(new CustomError("Invalid email address", 400));
@@ -84,13 +84,18 @@ exports.signup = asyncErrorHandler(async (req, res, next) => {
         if (!country || typeof country !== "string" || country.trim().length === 0) {
             return next(new CustomError("Invalid country", 400));
         }
+
+    if (password !== confirmPassword) {
+        return res.status(400).json({ message: 'Passwords do not match' });
+      }
         const user = await User.create({
                                         username, 
                                         email,
-                                        password: hashedPassword,
+                                        password,
                                         phoneNumber,
+                                        confirmPassword,
                                         country,
-                                        date:  `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` });
+                                        date:  new Date() });
 
         
         createSendResponse(user, 201, res); // Ensure this function is properly implemented
@@ -106,9 +111,6 @@ exports.login =  asyncErrorHandler(async (req, res, next) => {
     if (!username || !password) {
         return next(new CustomError("Provide your username and password", 401))
     }
-    if (!validator.isAlphanumeric(username)) {
-        return next(new CustomError("Invalid username format", 400));
-      }
    
     const user = await User.findOne({username}).select('+password')
     const compare = await user.comparePasswordInDb(password, user.password)

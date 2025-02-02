@@ -10,6 +10,8 @@
   
    
   })
+  //tasklist | findstr ngrok
+  //taskkill /IM ngrok.exe /F
   
   const PORT = process.env.PORT || 7000;
   let server;
