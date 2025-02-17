@@ -1,16 +1,16 @@
 
 
 
-module.exports = createAirtimeOptions = (phoneNumber, currencyCode, amount) => {
+const createAirtimeOptions = (phoneNumber, amount) => {
     return {
         recipients: [{
             phoneNumber: phoneNumber,
-            currencyCode: currencyCode || 'NGN',
-            amount: amount
+            amount: `NGN ${amount}`,
         }]
     };
 }
 
+module.exports = createAirtimeOptions 
 
 
 

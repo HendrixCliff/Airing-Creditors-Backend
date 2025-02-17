@@ -1,17 +1,17 @@
-const User = require("./../models/userSchema")
-const asyncErrorHandler = require("./../Utils/asyncErrorHandler")
-const util = require("util")
+const  User = require("./../models/userSchema"); 
+const asyncErrorHandler = require("./../Utils/asyncErrorHandler");
+const  util = require ("util");
 const crypto = require('crypto')
 const jwt = require("jsonwebtoken")
-const CustomError = require("./../Utils/CustomError")
-const sendForgotPasswordEmail = require("./../Utils/sendForgotPasswordEmail") 
-const bcrypt = require("bcryptjs");
+const CustomError =  require("./../Utils/CustomError")
+const sendForgotPasswordEmail = require("./../Utils/sendForgotPasswordEmail" )
+//import {bcrypt} from "bcryptjs";
 const validator = require("validator");
 
 
 const signToken = id => {
     
-if (!process.env.SECRET_STR) {
+if (!process.env.SECRET_STR ) {
     throw new Error('Missing SECRET_STR in environment variables');
 }
     const secret = process.env.SECRET_STR; 
@@ -105,23 +105,32 @@ exports.signup = asyncErrorHandler(async (req, res, next) => {
     }
 });
 
-exports.login =  asyncErrorHandler(async (req, res, next) => {
-    const { username, password } = req.body;
-    
-    if (!username || !password) {
-        return next(new CustomError("Provide your username and password", 401))
-    }
-   
-    const user = await User.findOne({username}).select('+password')
-    const compare = await user.comparePasswordInDb(password, user.password)
+exports.login = asyncErrorHandler(async (req, res, next) => {
+    const { identifier, password } = req.body; // 'identifier' can be username or email
 
-if(!user || !compare) {
-    const error = new CustomError("Incorrect username or password", 400)
-    return next(error)
-}
-console.log("Someone Just logged in")
-createSendResponse(user, 200, res)
-})
+    if (!identifier || !password) {
+        return next(new CustomError("Provide your username/email and password", 401));
+    }
+
+    // Find user by either username or email
+    const user = await User.findOne({
+        $or: [{ username: identifier }, { email: identifier }]
+    }).select('+password'); // Ensure password is selected
+
+    if (!user) {
+        return next(new CustomError("Incorrect username/email or password", 400));
+    }
+
+    // Compare passwords
+    const isMatch = await user.comparePasswordInDb(password, user.password);
+    if (!isMatch) {
+        return next(new CustomError("Incorrect username/email or password", 400));
+    }
+
+    console.log("Someone Just logged in");
+    createSendResponse(user, 200, res);
+});
+
 
 exports.protect = asyncErrorHandler(async (req, res, next) => {
    

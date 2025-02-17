@@ -1,9 +1,13 @@
-const Flutterwave = require('flutterwave-node-v3');
-const CustomError = require("../Utils/CustomError")
-const flw = new Flutterwave(process.env.FLW_PUBLIC_KEY, process.env.FLW_SECRET_KEY);
-const { sendAirtime } = require('./airtimeController'); 
-const validator = require("validator");
 
+const Flutterwave = require("flutterwave-node-v3");
+
+
+const CustomError =  require("../Utils/CustomError");
+const sendAirtime =  require("./airtimeController");
+
+const validator = require("validator"); 
+
+const flw = new Flutterwave(process.env.FLW_PUBLIC_KEY, process.env.FLW_SECRET_KEY);
 
 exports.initiatePayment = asyncErrorHandler(async (req, res, next) => {
     const { email, amount, phoneNumber, currency, payment_option } = req.body;

@@ -1,12 +1,8 @@
-const asyncErrorHandler = require("./../Utils/asyncErrorHandler")
-const CustomError = require("./../Utils/CustomError")
-const airtimeUtil = require('./../Utils/airtime');
-const AirtimeResponseModel = require('./../models/airtimeResponseSchema')
+const asyncErrorHandler =  require("./../Utils/asyncErrorHandler");
+const CustomError =  require("./../Utils/CustomError");
+const AirtimeResponseModel =  require('./../models/airtimeResponseSchema');
 
-const africasTalking = require('africastalking')({
-    apiKey: process.env.AT_API_KEY,
-    username: process.env.AT_USERNAME,
-});
+
 
 
 exports.sendAirtime = asyncErrorHandler(async (req, res, next) => {

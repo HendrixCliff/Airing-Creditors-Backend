@@ -1,20 +1,21 @@
-const express = require("express")
+const express = require('express');
 const app = express()
 const CustomError = require("./Utils/CustomError")
-const globalErrorHandler = require("./controllers/errorController")
-const rateLimit = require("express-rate-limit")
-const sanitize = require("express-mongo-sanitize")
-const helmet = require("helmet")
-const xss = require("xss-clean")
-const bodyParser = require('body-parser')
-// const hpp = require("hpp")
+const  globalErrorHandler = require(  "./controllers/errorController")
+const  rateLimit = require( "express-rate-limit")
+const  sanitize = require(  "express-mongo-sanitize")
+const  helmet = require("helmet")
+const  xss = require("xss-clean")
+const  bodyParser = require('body-parser')
+// const hp = require(  "hpp"
 const authRoute = require("./routes/authRoute")
 const userRoute = require("./routes/userRoute")
 // const paymentRoute = require("./routes/paymentRoute")
 // const airtimeRoute = require("./routes/airtimeRoute")
 const cookieParser = require('cookie-parser');
 const cors = require('cors')
-
+//const transferPaymentRoute = require("./routes/transferPaymentRoute")
+//const webhookRoutes = require('./routes/webhookRoutes');
 
 
 
@@ -34,12 +35,24 @@ app.use( (req, res, next) => {
 })
 
 
+const allowedOrigins = [
+    'https://airing-creditors.netlify.app', // Production frontend
+    'http://localhost:5173' // Development frontend
+];
+
 app.use(cors({
-    origin: ['https://airing-creditors.netlify.app', 'https://8fa0-105-112-176-62.ngrok-free.app'], // Allowed origins
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
+
 app.use((req, res, next) => {
     console.log('CORS Headers:', res.getHeaders());
     next();
@@ -52,6 +65,8 @@ app.use(express.json())
 
 app.use("/api/v1/auth", authRoute)
 app.use("/api/v1/users", userRoute)
+//app.use('/api/v1/webhooks', webhookRoutes);
+//app.use('/api/v1/transferPayment', transferPaymentRoutes)
 // app.use("/api/v1/payments", paymentRoute)
 // app.use('/api/v1/airtime', airtimeRoute); 
 

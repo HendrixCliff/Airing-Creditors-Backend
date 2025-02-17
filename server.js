@@ -31,6 +31,7 @@ process.on('uncaughtException', (err) => {
 
 
 const app = require("./app")
+const { WebSocketServer } = require("ws"); 
 const mongoose = require("mongoose")
 const dotenv = require("dotenv")
 dotenv.config({path: "./config.env" })
@@ -49,8 +50,12 @@ mongoose.connect(process.env.CONN_STR, {
   mongoose.connection.once('open', () => {
     console.log('Connected to the database');
   });
+  const wss = new WebSocketServer({ port: 8080 }); // WebSocket server
 
-
+  wss.on("connection", (ws) => {
+    console.log("Web Socket");
+  });
+  
   server = app.listen( PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });

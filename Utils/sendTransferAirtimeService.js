@@ -1,22 +1,25 @@
 
-const africasTalking = require('africastalking')({
+const africastalking = require('africastalking')({
     apiKey: process.env.AT_API_KEY,
     username: process.env.AT_USERNAME,
 });
-const airtimeUtil = require('./airtime');
-const AirtimeResponseModel = require('../models/airtimeResponseSchema');
+const AirtimeResponseModel = require('../models/airtimeResponseSchema.js');
 
- const sendAirtimeService = async (phoneNumber, amount, verifyStatus, transaction_id) => {
+const sendTransferAirtimeService = async (phoneNumber, amount, verifyStatus, transaction_id) => {
     if (!phoneNumber || !amount || !verifyStatus || !transaction_id) {
         throw new Error("All parameters are required");
     }
 
-    const airtime = africasTalking.AIRTIME;
-    const options = airtimeUtil.createAirtimeOptions(phoneNumber, amount);
+    const airtime = africastalking.AIRTIME;
+    const options = {
+        recipients: [{ phoneNumber, amount: `NGN ${amount}`, currencyCode: "NGN" }]
+    };
 
     try {
-        await airtime.send(options);
+        const response = await airtime.send(options);
+        console.log("Airtime Sent:", response);
 
+        // Save transaction to DB
         const savedResponse = await AirtimeResponseModel.create({
             phoneNumber,
             amount,
@@ -36,6 +39,5 @@ const AirtimeResponseModel = require('../models/airtimeResponseSchema');
     }
 };
 
-module.exports = sendAirtimeService
 
-
+module.exports = sendTransferAirtimeService;

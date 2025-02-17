@@ -1,4 +1,4 @@
-const nodemailer = require("nodemailer");
+const nodemailer =  require("nodemailer");
 
 /**
  * Sends a forgot password email to the user.
@@ -42,6 +42,4 @@ const sendForgotPasswordEmail = async (recipientEmail, resetLink) => {
   }
 };
 
-module.exports = {
-  sendForgotPasswordEmail,
-};
+module.exports = sendForgotPasswordEmail

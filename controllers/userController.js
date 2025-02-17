@@ -1,7 +1,7 @@
 const CustomError = require('./../Utils/CustomError');
 const asyncErrorHandler = require('./../Utils/asyncErrorHandler');
 const User = require('./../models/userSchema'); 
-const authController = require("./authController")
+
 
 
 

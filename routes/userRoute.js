@@ -1,7 +1,7 @@
-const express = require("express")
+const  express = require("express");
 const router =  express.Router();
-const userController = require("./../controllers/userController")
-const authController = require("./../controllers/authController")
+const  userController = require("./../controllers/userController.js");
+const  authController = require("./../controllers/authController.js");
 
 router.route("/updateMe").post( authController.protect, userController.updateMe)
 router.route("/updatePassword").post(authController.protect, userController.updatePassword)
